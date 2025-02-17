@@ -1,0 +1,6 @@
+to-do: 13/2
+DONE Makefile
+create threads --> look up protection
+make a plan
+think of a better struct
+
