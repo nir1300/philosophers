@@ -1,6 +1,11 @@
-to-do: 13/2
-DONE Makefile
-create threads --> look up protection
-make a plan
-think of a better struct
+to-do 20/2:
+write down routine (even and odd)
 
+mutexes: only need one per fork and one shared one for output
+monitoring: make sure nobody died (check time since last meal) and whether everybody has eaten enough
+create infinte while loop before routine ->only start when all threads are created
+
+unclear:
+should i have a limit of 200 philos?
+checking data races enough with this?
+    (ulimit -v 140000; valgrind --tool=helgrind --history-level=approx ./philo 3 600 200 200 3)

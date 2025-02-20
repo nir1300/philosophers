@@ -6,7 +6,7 @@
 /*   By: nrumpfhu <nrumpfhu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/13 16:34:09 by nrumpfhu          #+#    #+#             */
-/*   Updated: 2025/02/17 17:17:43 by nrumpfhu         ###   ########.fr       */
+/*   Updated: 2025/02/20 18:21:21 by nrumpfhu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,18 +34,23 @@ typedef struct s_philos
 {
 	int				number;
 	pthread_t		thread_id;
-	int 			state; // 0: not yet started, 1: taken a fork, 2: eating, 3: sleeping, 4: thinking, 5: dead
+	int				state; // 0: not yet started, 1: taken a fork, 2: eating, 3: sleeping, 4: thinking, 5: dead
 	int				meals_eaten;
+	long			time_since_eaten;
 	int				locked;
 	pthread_mutex_t	left_fork;
 }					t_philos;
 
 typedef struct s_data
 {
-	pthread_mutex_t lock; // which general mutexes do i need?
-	int 			alive; // 1: all alive, 0: somebody died
+	pthread_t		output_id;
+	pthread_mutex_t	output; // which general mutexes do i need?
+	int				alive; // 1: all alive, 0: somebody died
+	long			start_time;
 	pthread_mutex_t	alive_mutex;
+	int				threads_finished;
 	t_philos		*philos;
+	int				i;
 	t_input			input;
 }					t_data;
 
@@ -54,6 +59,17 @@ int					ft_atoi(const char *nptr);
 void				error_exit(char *error_msg, int errnum);
 void				ft_bzero(void *s, size_t n);
 void				*ft_calloc(size_t nmemb, size_t size);
+
+// init
+void				error_exit(char *error_msg, int errnum);
+void				error_handling(int argc, char *argv[]);
+void				free_data(t_data *data);
+void				initialize(int argc, char *argv[], t_data *data);
+
+// monitoring
+long				get_time(long start_time);
+long				get_starttime(void);
+void				print_states(t_data *data, int state, int philo_id);
 
 // main
 

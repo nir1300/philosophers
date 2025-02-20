@@ -56,5 +56,6 @@ shared mutex for state stop execute
 single mutex for each fork
 
 
-structure:
-do with arrays instead of linked lists?
+find out:
+wtf do i pass to routine function
+when do i use usleep?? how much?? (around 200-300?)
