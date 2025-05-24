@@ -30,8 +30,6 @@ typedef struct s_input
 	int				nb_meals;
 }					t_input;
 
-// struct t_data;
-
 typedef struct s_philos
 {
 	int				number;
@@ -41,18 +39,17 @@ typedef struct s_philos
 	int				state; // 0: not yet started, 1: taken a fork, 2: eating, 3: sleeping, 4: thinking, 5: dead
 	int				meals_eaten;
 	long			time_since_eaten;
-	pthread_mutex_t	output;
 	struct s_data	*data;
 }					t_philos;
 
 typedef struct s_data
 {
+	pthread_t		monitor;
 	pthread_mutex_t	output;
 	pthread_mutex_t	*forks;
-	int				alive; // 1: all alive, 0: somebody died
+	int				alive;
 	int				stop;
 	long			start_time;
-	pthread_mutex_t	alive_mutex;
 	int				threads_finished;
 	t_philos		*philos;
 	t_input			input;

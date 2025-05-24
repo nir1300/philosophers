@@ -23,15 +23,15 @@ void	join_threads(t_data *data)
 	int	i;
 	int	error;
 
-	i = 0;
-	while (i < data->input.nb_philo)
+	i = data->input.nb_philo - 1;
+	while (i >= 0)
 	{
 		error = pthread_join(data->philos[i].thread_id, NULL);
 		if (error != 0)
 			printf("Thread of philosopher number %i could not be joined", i);
-		i++;
+		i--;
 	}
-
+	pthread_join(data->monitor, NULL);
 }
 
 void	destroy_mutexes(t_data *data)
@@ -39,29 +39,19 @@ void	destroy_mutexes(t_data *data)
 	int	i;
 	int	error;
 
-	i = 0;
-	while (i < data->input.nb_philo)
+	i = data->input.nb_philo - 1;
+	while (i >= 0)
 	{
         error = pthread_mutex_destroy(&data->forks[i]);
         if (error != 0)
             printf("Fork number %i could not be destroyed", i);
-		i++;
+		i--;
 	}
+	error = pthread_mutex_destroy(&data->output);
+        if (error != 0)
+            printf("Fork number %i could not be destroyed", i);
 }
 
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   monitoring.c                                       :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: nrumpfhu <nrumpfhu@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/02/20 16:06:29 by nrumpfhu          #+#    #+#             */
-/*   Updated: 2025/02/27 21:26:07 by nrumpfhu         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-#include "philo.h"
 
 long	get_time(long start_time)
 {
@@ -154,6 +144,9 @@ void take_fork(t_philos *philo, t_data *data)
 	{
 		pthread_mutex_lock(&data->forks[philo->i]);
 		pthread_mutex_lock(&data->forks[(philo->i + 1) % data->input.nb_philo]);
+		// pthread_mutex_lock(&data->output);
+		// printf("Nb philo: %i\n, left fork: %d\n, right fork: %d\n", philo->number, philo->i, (philo->i + 1) % data->input.nb_philo);
+		// pthread_mutex_unlock(&data->output);
 	}
 	else
 	{
@@ -168,9 +161,9 @@ void eat(t_philos *philo, t_data *data)
 	print_states(philo, data, 2);
 	pthread_mutex_lock(&data->output);
 	philo->meals_eaten++;
-	pthread_mutex_unlock(&data->output);
+	// pthread_mutex_unlock(&data->output);
 	usleep(philo->input.time_to_eat * 1000);
-	pthread_mutex_lock(&data->output);
+	// pthread_mutex_lock(&data->output);
 	philo->time_since_eaten = get_time(data->start_time);
 	pthread_mutex_unlock(&data->output);
 }
@@ -178,13 +171,15 @@ void eat(t_philos *philo, t_data *data)
 void put_down_fork(t_philos *philo, t_data *data)
 {
 	pthread_mutex_unlock(&data->forks[philo->i]);
-	pthread_mutex_unlock(&data->forks[philo->i+1 % data->input.nb_philo]);
+	pthread_mutex_unlock(&data->forks[(philo->i+1) % data->input.nb_philo]);
 }
 
 void sleepy(t_philos *philo, t_data *data)
 {
 	print_states(philo, data, 3);
 	usleep(philo->input.time_to_sleep * 1000);
+	if (data->input.nb_philo % 2 != 0)
+		print_states(philo, data, 4);
 }
 
 void	*philo_routine(void *var)
@@ -199,7 +194,6 @@ void	*philo_routine(void *var)
 		eat(philo, data);
 		put_down_fork(philo, data);
 		sleepy(philo, data);
-		// think(philo, data);
 	}
 	return (NULL);
 }
@@ -221,7 +215,6 @@ void	create_threads(t_data *data)
 	data->threads_finished = 0;
 	while (i < data->input.nb_philo)
 	{
-		pthread_mutex_init(&data->forks[i], NULL);
 		error = pthread_create(&data->philos[i].thread_id, NULL, &philo_routine, (void *)&data->philos[i]);
 		if (error != 0)
 			error_exit("Thread could not be created", error);
@@ -229,6 +222,71 @@ void	create_threads(t_data *data)
 	}
 	data->threads_finished = 1;
 }
+
+void	free_data(t_data *data)
+{
+	free(data->philos);
+	free(data->forks);
+}
+
+void	exit_sim(t_data *data)
+{
+	join_threads(data);
+	destroy_mutexes(data);
+	free_data(data);
+	exit(0);
+}
+
+void	*monitoring(void *smt)
+{
+	t_data *data = (t_data *)smt;
+	t_philos *philo = data->philos;
+	int nb = data->input.nb_meals;
+	int i = 0;
+	long last_meal_time; get_time(data->start_time);
+
+	while (data->alive)
+	{
+		i = 0;
+		while (i < nb)
+		{
+			last_meal_time = get_time(data->start_time) - philo[i].time_since_eaten;
+			if (last_meal_time > philo[i].input.time_to_eat)
+			{
+				print_states(&philo[i], data, 5);
+				data->alive = 0;
+				exit_sim(data);
+			}
+			i++;
+		}
+		i = 0;
+		while (i < nb)
+		{
+			if (philo[i].meals_eaten >= data->input.nb_meals)
+				i++;
+			else
+				break;
+		}
+	}
+	return (NULL);
+}
+
+// int meals_finished(t_philos *philo)
+// {
+//     int i = 0;
+//     pthread_mutex_lock(&philo->data->output);  // Lock before accessing shared data
+//     while (i < philo->data->input.nb_philo)
+//     {
+//         if (philo->data->philos[i].meals_eaten <= philo->data->input.nb_meals)
+//         {
+//             pthread_mutex_unlock(&philo->data->output);  // Unlock after reading
+//             return (0);
+//         }
+//         i++;
+//     }
+//     pthread_mutex_unlock(&philo->data->output);  // Unlock after reading
+//     return (1);
+// }
 
 int	main(int argc, char *argv[])
 {
@@ -238,8 +296,10 @@ int	main(int argc, char *argv[])
 	error_handling(argc, argv);
 	initialize(argc, argv, &data);
 	create_threads(&data);
+	pthread_create(&data.monitor, NULL, &monitoring, (void *)&data);
+		// 	error = pthread_create(&data->philos[i].thread_id, NULL, &philo_routine, (void *)&data->philos[i]);
+		// if (error != 0)
+		// 	error_exit("Thread could not be created", error);
 	// monitoring(&data);
-	join_threads(&data);
-	destroy_mutexes(&data);
-	// free_data(&data);	
+	exit_sim(&data);
 }
