@@ -1,0 +1,41 @@
+to-do: 23/5 & 24/5
+think
+fix deadlocks/data races
+monitoring
+free everything
+
+25/5 & 26/5
+testers
+fix edge cases
+fix data races
+
+27/5:
+norme
+fix last issues
+be done by end of day
+
+
+what do i need to monitor?
+time since last eaten
+deaths
+number of meals
+
+
+
+mutexes: only need one per fork and one shared one for output
+monitoring: make sure nobody died (check time since last meal) and whether everybody has eaten enough
+create infinte while loop before routine ->only start when all threads are created
+
+unclear:
+should i have a limit of 200 philos?
+checking data races enough with this?
+    ulimit -v 140000; valgrind --tool=helgrind --history-level=approx ./philo 3 600 200 200 3
+    
+
+
+1. error handling 
+2. fill struct (shared and philo struct)
+3. create philo threads
+4. create monitoring thread
+5. join philo/monitoring threads
+6. free & exit
