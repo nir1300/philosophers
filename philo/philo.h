@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   philo.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: nrumpfhu <nrumpfhu@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/13 16:34:09 by nrumpfhu          #+#    #+#             */
-/*   Updated: 2025/02/27 18:23:18 by nrumpfhu         ###   ########.fr       */
+/*   Updated: 2025/05/25 04:10:10 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,9 @@ typedef struct s_data
 	pthread_t		monitor;
 	pthread_mutex_t	output;
 	pthread_mutex_t	*forks;
-	int				alive;
+	pthread_mutex_t	access;
+	pthread_mutex_t	alive;
+	int				is_alive;
 	int				stop;
 	long			start_time;
 	int				threads_finished;
@@ -55,12 +57,17 @@ typedef struct s_data
 	t_input			input;
 }					t_data;
 
+void put_down_fork(t_philos *philo, t_data *data);
+int	all_alive(t_data *data);
+void	ft_usleep(long duration);
+
 // libft_helpers
 int					ft_atoi(const char *nptr);
 void				error_exit(char *error_msg, int errnum);
 void				ft_bzero(void *s, size_t n);
 void				*ft_calloc(size_t nmemb, size_t size);
 
+void	exit_sim(t_data *data);
 // init
 void				error_exit(char *error_msg, int errnum);
 void				error_handling(int argc, char *argv[]);
