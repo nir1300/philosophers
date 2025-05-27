@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/13 16:34:14 by nrumpfhu          #+#    #+#             */
-/*   Updated: 2025/05/25 04:23:02 by marvin           ###   ########.fr       */
+/*   Updated: 2025/05/27 21:58:21 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,19 +39,28 @@ void	destroy_mutexes(t_data *data)
 	int	i;
 	int	error;
 
+	t_philos *philo = data->philos;
 	i = 0;
+	usleep(1000);
 	while (i < data->input.nb_philo)
 	{
+		// if (philo[i].state == 1 || philo[i].state == 2)
+		// 	put_down_fork(&philo[i], data);
         error = pthread_mutex_destroy(&data->forks[i]);
         if (error != 0)
-            printf("Fork number %i could not be destroyed\n", i);
+            printf("Fork number %i could not be destroyed: error %d\n", i, error);
 		i++;
 	}
+	(void)philo;
 	pthread_mutex_destroy(&data->alive);
+	if (error != 0)
+		printf("Alive mutex could not be destroyed\n");
 	pthread_mutex_destroy(&data->access);
+	if (error != 0)
+		printf("Access mutex could not be destroyed\n");
 	error = pthread_mutex_destroy(&data->output);
 	if (error != 0)
-		printf("Output mutex %i could not be destroyed\n", i);
+		printf("Output mutex could not be destroyed\n");
 }
 
 
@@ -145,10 +154,15 @@ void	init_philos(char *argv[], t_data *data)
 	}
 }
 
+
 void take_fork(t_philos *philo, t_data *data) 
 {
 	if (!all_alive(data))
 		return ;
+	pthread_mutex_lock(&data->access);
+	philo->state = 1;
+	pthread_mutex_unlock(&data->access);
+	usleep(1000 * (philo->number % 2));
 	if (philo->number % 2 == 0)
 	{
 		pthread_mutex_lock(&data->forks[philo->i]);
@@ -156,11 +170,14 @@ void take_fork(t_philos *philo, t_data *data)
 	}
 	else
 	{
+		usleep(1000 * (data->input.time_to_eat / 2));
 		pthread_mutex_lock(&data->forks[(philo->i + 1) % data->input.nb_philo]);
 		pthread_mutex_lock(&data->forks[philo->i]);
 	}
 	if (!all_alive(data))
 		return (put_down_fork(philo, data));
+	
+	print_states(philo, data, 1);
 	print_states(philo, data, 1);
 }
 
@@ -168,18 +185,45 @@ void eat(t_philos *philo, t_data *data)
 {
 	if (!all_alive(data))
 		return ;
-	print_states(philo, data, 2);
-	ft_usleep(philo->input.time_to_eat);
 	pthread_mutex_lock(&data->access);
 	philo->meals_eaten++;
+	philo->state = 2;
+	philo->time_since_eaten = get_starttime();
+	pthread_mutex_unlock(&data->access);
+	
+	print_states(philo, data, 2);
+	usleep(philo->input.time_to_eat * 1000);
+	pthread_mutex_lock(&data->access);
 	philo->time_since_eaten = get_starttime();
 	pthread_mutex_unlock(&data->access);
 }
 
+int	unlock(t_philos *philo, t_data *data)
+{
+	int state;
+	pthread_mutex_lock(&data->access);
+	state = philo->state;
+	if (state == 1 || state == 2)
+		philo->state = 0;
+	pthread_mutex_unlock(&data->access);
+	return (state);
+}
+	
 void put_down_fork(t_philos *philo, t_data *data)
 {
-	pthread_mutex_unlock(&data->forks[philo->i]);
-	pthread_mutex_unlock(&data->forks[(philo->i+1) % data->input.nb_philo]);
+	if (unlock(philo, data))
+	{
+		if (philo->number % 2 == 0)
+		{
+			pthread_mutex_unlock(&data->forks[(philo->i + 1) % data->input.nb_philo]);
+			pthread_mutex_unlock(&data->forks[philo->i]);
+		}
+		else if (philo->number % 2 != 0)
+		{
+			pthread_mutex_unlock(&data->forks[philo->i]);
+			pthread_mutex_unlock(&data->forks[(philo->i + 1) % data->input.nb_philo]);
+		}
+	}
 }
 
 int	all_alive(t_data *data)
@@ -200,11 +244,14 @@ void sleepy(t_philos *philo, t_data *data)
 	if (!all_alive(data))
 		return ;
 	print_states(philo, data, 3);
-	ft_usleep(philo->input.time_to_sleep);
+	usleep(philo->input.time_to_sleep * 1000);
 	if (!all_alive(data))
 		return ;
 	if (nb_philo % 2 != 0)
+	{
 		print_states(philo, data, 4);
+		// usleep(data->input.time_to_die - data->input.time_to_sleep);
+	}
 }
 
 void	ft_usleep(long duration)
@@ -218,19 +265,22 @@ void	*philo_routine(void *var)
 {
 	t_philos *philo = (t_philos *)var;
 	t_data	*data = philo->data;
-	if (philo->number % 2 == 0)
-		usleep(200);
+	// if (philo->number % 2 == 0)
+	// 	usleep(150);
+	if (data->input.nb_philo % 2 != 0)
+		usleep(100);
 	while (1)
 	{
 		if (!all_alive(data))
 			return (NULL);
 		if (data->input.nb_philo % 2 != 0 && philo->number % 2 != 0)
-    		usleep(500);
+    		usleep(800);
 		take_fork(philo, data);
 		eat(philo, data);
 		put_down_fork(philo, data);
 		sleepy(philo, data);
 	}
+
 	return (NULL);
 }
 
@@ -255,6 +305,7 @@ void	create_threads(t_data *data)
 		error = pthread_create(&data->philos[i].thread_id, NULL, &philo_routine, (void *)&data->philos[i]);
 		if (error != 0)
 			error_exit("Thread could not be created", error);
+		// usleep(100);
 		i++;
 	}
 }
@@ -328,7 +379,7 @@ void	*monitoring(void *smt)
 			}
 			i++;
 		}
-		usleep(1000);
+		usleep(10000);
 	}
 	return (NULL);
 }

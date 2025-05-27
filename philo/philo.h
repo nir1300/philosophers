@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/13 16:34:09 by nrumpfhu          #+#    #+#             */
-/*   Updated: 2025/05/25 04:10:10 by marvin           ###   ########.fr       */
+/*   Updated: 2025/05/27 20:57:30 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ typedef struct s_data
 	int				stop;
 	long			start_time;
 	int				threads_finished;
+	int				*fork_states;
 	t_philos		*philos;
 	t_input			input;
 }					t_data;
