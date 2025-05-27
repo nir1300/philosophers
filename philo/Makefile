@@ -1,5 +1,5 @@
 NAME = philo
-CFILES = main.c libft_helpers.c
+CFILES = main.c libft_helpers.c exit.c helpers.c init.c routine.c threads.c time.c monitoring.c
 OFILES = $(CFILES:.c=.o)
 
 CFLAGS = -Wall -Werror -Wextra
