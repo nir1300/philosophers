@@ -3,14 +3,38 @@
 /*                                                        :::      ::::::::   */
 /*   libft_helpers.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: nrumpfhu <nrumpfhu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/13 16:34:16 by nrumpfhu          #+#    #+#             */
-/*   Updated: 2025/05/27 22:49:13 by marvin           ###   ########.fr       */
+/*   Updated: 2025/06/16 02:03:11 by nrumpfhu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
+
+int	ft_strcmp(char *s1, char *s2)
+{
+	int	i;
+
+	i = 0;
+	while (s1[i])
+	{
+		if (s1[i] != s2[i])
+			return (s1[i] - s2[i]);
+		i++;
+	}
+	return (s1[i] - s2[i]);
+}
+
+int	ft_strlen(char *str)
+{
+	int	i;
+
+	i = 0;
+	while (str && str[i])
+		i++;
+	return (i);
+}
 
 int	ft_atoi(const char *nptr)
 {

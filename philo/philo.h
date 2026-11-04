@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   philo.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: nrumpfhu <nrumpfhu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/13 16:34:09 by nrumpfhu          #+#    #+#             */
-/*   Updated: 2025/05/27 22:57:41 by marvin           ###   ########.fr       */
+/*   Updated: 2025/06/16 02:02:57 by nrumpfhu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ typedef struct s_philos
 	t_input			input;
 	int				i;
 	pthread_t		thread_id;
-	int				state; // 0: not yet started, 1: taken a fork, 2: eating, 3: sleeping, 4: thinking, 5: dead
+	int				state;
 	int				meals_eaten;
 	long			time_since_eaten;
 	struct s_data	*data;
@@ -50,25 +50,24 @@ typedef struct s_data
 	pthread_mutex_t	access;
 	pthread_mutex_t	alive;
 	int				is_alive;
+	int				mutex_init;
+	int				thread_init;
 	long			start_time;
 	t_philos		*philos;
 	t_input			input;
 }					t_data;
 
-void put_down_fork(t_philos *philo, t_data *data);
-int	all_alive(t_data *data);
-void	ft_usleep(long duration);
-
 // libft_helpers
 int					ft_atoi(const char *nptr);
-void				error_exit(char *error_msg, int errnum);
 void				ft_bzero(void *s, size_t n);
 void				*ft_calloc(size_t nmemb, size_t size);
-
+void				ft_putendl(char *str);
+int					ft_strcmp(char *s1, char *s2);
+int					ft_strlen(char *str);
 
 // init
-void				error_handling(int argc, char *argv[]);
-void				initialize(int argc, char *argv[], t_data *data);
+int					error_handling(int argc, char *argv[]);
+int					initialize(int argc, char *argv[], t_data *data);
 void				init_philos(char *argv[], t_data *data);
 
 // time
@@ -77,29 +76,34 @@ long				get_starttime(void);
 void				print_states(t_philos *philos, t_data *data, int state);
 
 // threads
-void	create_threads(t_data *data);
-void	join_threads(t_data *data);
-void	destroy_mutexes(t_data *data);
+int					create_mutexes(t_data *data);
+int					create_threads(t_data *data);
+int					join_threads(t_data *data);
+int					destroy_mutexes(t_data *data);
 
-//monitoring
-void	*monitoring(void *smt);
+// monitoring
+void				*monitoring(void *smt);
 
-// main
+// routine helpers
+void				one_philo(t_data *data, t_philos *philo);
+void				stagger_start(t_data *data, t_philos *philo);
 
 // helpers
-int	all_alive(t_data *data);
-int	unlock(t_philos *philo, t_data *data);
+int					all_alive(t_data *data);
+int					unlock(t_philos *philo, t_data *data);
+void				forks_even(t_data *data, t_philos *philo, int take);
+void				take_odd(t_data *data, t_philos *philo);
 
 // routine
-void	take_fork(t_philos *philo, t_data *data);
-void	eat(t_philos *philo, t_data *data);
-void	put_down_fork(t_philos *philo, t_data *data);
-void	sleepy(t_philos *philo, t_data *data);
-void	*philo_routine(void *var);
+void				take_fork(t_philos *philo, t_data *data);
+void				eat(t_philos *philo, t_data *data);
+void				put_down_fork(t_philos *philo, t_data *data);
+void				sleepy(t_philos *philo, t_data *data);
+void				*philo_routine(void *var);
+void				ft_usleep(long duration);
 
 // exit
-void				error_exit(char *error_msg, int errnum);
 void				free_data(t_data *data);
-void	exit_sim(t_data *data);
+int					exit_sim(t_data *data, char *msg);
 
 #endif

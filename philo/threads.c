@@ -3,82 +3,99 @@
 /*                                                        :::      ::::::::   */
 /*   threads.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: nrumpfhu <nrumpfhu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/27 22:48:11 by marvin            #+#    #+#             */
-/*   Updated: 2025/05/27 22:48:11 by marvin           ###   ########.fr       */
+/*   Updated: 2025/06/16 00:40:25 by nrumpfhu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 
-void	create_threads(t_data *data)
+int	create_mutexes(t_data *data)
 {
-	int	error;
 	int	i;
-	int	nb_philos;
 
 	i = 0;
-	nb_philos = data->input.nb_philo;
-	while (i < nb_philos)
+	if (pthread_mutex_init(&data->output, NULL) != 0)
+		return (exit_sim(data, "Mutex could not be created\n"));
+	data->mutex_init++;
+	if (pthread_mutex_init(&data->access, NULL) != 0)
+		return (exit_sim(data, "Mutex could not be created\n"));
+	data->mutex_init++;
+	if (pthread_mutex_init(&data->alive, NULL) != 0)
+		return (exit_sim(data, "Mutex could not be created\n"));
+	data->mutex_init++;
+	pthread_mutex_lock(&data->alive);
+	while (i < data->input.nb_philo)
 	{
-		pthread_mutex_init(&data->forks[i], NULL);
+		if (pthread_mutex_init(&data->forks[i], NULL) != 0)
+		{
+			data->is_alive = 0;
+			pthread_mutex_unlock(&data->alive);
+			return (exit_sim(data, "Mutex could not be created\n"));
+		}
+		data->mutex_init++;
 		i++;
 	}
+	return (0);
+}
+
+int	create_threads(t_data *data)
+{
+	int	i;
+
 	i = 0;
 	while (i < data->input.nb_philo)
 	{
-		error = pthread_create(&data->philos[i].thread_id, NULL, &philo_routine,
-				(void *)&data->philos[i]);
-		if (error != 0)
-			error_exit("Thread could not be created", error);
+		if (pthread_create(&data->philos[i].thread_id, NULL, &philo_routine,
+				(void *)&data->philos[i]) != 0)
+		{
+			data->is_alive = 0;
+			pthread_mutex_unlock(&data->alive);
+			return (exit_sim(data, "Philo thread could not be created\n"));
+		}
+		data->thread_init++;
 		i++;
 	}
+	return (0);
 }
 
-void	join_threads(t_data *data)
+int	join_threads(t_data *data)
 {
 	int	i;
-	int	error;
-	int	nb_philos;
 
-	nb_philos = data->input.nb_philo;
 	i = 0;
-	while (i < nb_philos)
+	while (i < data->input.nb_philo && i < data->thread_init)
 	{
-		error = pthread_join(data->philos[i].thread_id, NULL);
-		if (error != 0)
-			printf("Thread of philosopher number %i could not be joined", i);
+		if (pthread_join(data->philos[i].thread_id, NULL) != 0)
+			ft_putendl("Philo thread could not be joined\n");
 		i++;
 	}
-	pthread_join(data->monitor, NULL);
+	if (data->thread_init -1 == data->input.nb_philo && \
+	pthread_join(data->monitor, NULL) != 0)
+		ft_putendl("Monitoring thread could not be joined\n");
+	return (0);
 }
 
-void	destroy_mutexes(t_data *data)
+int	destroy_mutexes(t_data *data)
 {
-	int			i;
-	int			error;
-	t_philos	*philo;
+	int	i;
 
-	philo = data->philos;
 	i = 0;
 	usleep(1000);
-	while (i < data->input.nb_philo)
+	if (data->mutex_init > 0 && pthread_mutex_destroy(&data->output) != 0)
+		ft_putendl("Access mutex could not be destroyed\n");
+	if (data->mutex_init > 1 && pthread_mutex_destroy(&data->access) != 0)
+		ft_putendl("Output mutex could not be destroyed\n");
+	if (data->mutex_init > 2 && pthread_mutex_destroy(&data->alive) != 0)
+		ft_putendl("Alive mutex could not be destroyed\n");
+	data->mutex_init -= 3;
+	while (i < data->mutex_init)
 	{
-		error = pthread_mutex_destroy(&data->forks[i]);
-		if (error != 0)
-			printf("Fork number %i could not be destroyed: error %d\n", i,
-				error);
+		if (pthread_mutex_destroy(&data->forks[i]) != 0)
+			ft_putendl("Fork mutex could not be destroyed\n");
 		i++;
 	}
-	(void)philo;
-	pthread_mutex_destroy(&data->alive);
-	if (error != 0)
-		printf("Alive mutex could not be destroyed\n");
-	pthread_mutex_destroy(&data->access);
-	if (error != 0)
-		printf("Access mutex could not be destroyed\n");
-	error = pthread_mutex_destroy(&data->output);
-	if (error != 0)
-		printf("Output mutex could not be destroyed\n");
+	return (0);
 }

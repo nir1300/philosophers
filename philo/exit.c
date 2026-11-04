@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   exit.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: nrumpfhu <nrumpfhu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/27 22:45:45 by marvin            #+#    #+#             */
-/*   Updated: 2025/05/27 22:45:45 by marvin           ###   ########.fr       */
+/*   Updated: 2025/06/16 00:37:05 by nrumpfhu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,16 +18,25 @@ void	free_data(t_data *data)
 	free(data->forks);
 }
 
-void	exit_sim(t_data *data)
+int	exit_sim(t_data *data, char *msg)
 {
 	join_threads(data);
 	destroy_mutexes(data);
 	free_data(data);
-	exit(0);
+	if (msg)
+	{
+		ft_putendl(msg);
+		return (1);
+	}
+	return (0);
 }
 
-void	error_exit(char *error_msg, int errnum)
+void	ft_putendl(char *msg)
 {
-	printf("%s\n", error_msg);
-	exit(errnum);
+	int	i;
+
+	i = 0;
+	while (msg[i])
+		write(2, &msg[i++], 1);
+	write(2, "\n", 1);
 }

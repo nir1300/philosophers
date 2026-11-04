@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   monitoring.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: nrumpfhu <nrumpfhu@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/27 22:46:45 by marvin            #+#    #+#             */
-/*   Updated: 2025/05/27 22:46:45 by marvin           ###   ########.fr       */
+/*   Updated: 2025/06/15 23:19:50 by nrumpfhu         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ int	last_meal(t_data *data, t_philos *philo)
 		last_meal_time = get_starttime() - philo[i].time_since_eaten;
 		death_time = philo[i].input.time_to_die;
 		pthread_mutex_unlock(&data->access);
-		if (last_meal_time > death_time)
+		if (last_meal_time >= death_time)
 		{
 			pthread_mutex_lock(&data->alive);
 			data->is_alive = 0;
@@ -83,7 +83,7 @@ void	*monitoring(void *smt)
 		pthread_mutex_unlock(&data->alive);
 		if (last_meal(data, philo) || count_meals(data, philo))
 			return (NULL);
-		usleep(1000);
+		usleep(50);
 	}
 	return (NULL);
 }
